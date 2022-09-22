@@ -1,6 +1,9 @@
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const User = require('../model/user');
+const Todo = require('../model/todo');
+const fs = require('fs');
+const path = require('path')
 
 
 exports.registrationPost=async(req,res)=>{
@@ -13,24 +16,23 @@ exports.registrationPost=async(req,res)=>{
             profileImage: req.file.filename
         })
         await newUser.save();
-        res.json({success:'registration succesfull'});
+        res.json({status:"success",msg:'registration succesfull'});
     }catch(err){
-        res.json({error:'Internal Server Error'});
-        console.log(err)
+        res.json({status:"failed",msg:'Internal Server Error'});
     }
     console.log(req.body,req.file)
 }
+
 exports.logInPost =async (req, res) => {
     try{
-        const user = await User.findOne({email:req.body.email}).populate('todos')
+        const user = await User.findOne({email:req.body.email})
         const match = await bcrypt.compare(req.body.password, user.password)
         if(match){
             res.json({msg:'user found successfully',user:{
                 id: user._id,
                 name: user.name,
                 email: user.email,
-                profileImage: user.profileImage,
-                todos: user.todos
+                profileImage: user.profileImage
             }})
         }else{
             res.json({failed:'user can not be found',message:'Please enter a valid email address and password'})
@@ -38,4 +40,39 @@ exports.logInPost =async (req, res) => {
     }catch(err){
         res.json({error:'Internal Server Error'});
     }
+}
+
+exports.getProfile =async (req, res) => {
+    try{
+        User.findOne({_id:req.params.id}).select({
+            _v:0,
+            password:0
+        }).exec((err,data)=>{
+            if(err){
+                res.json({status:'failed',message:'credentail error'})
+            }else{
+                res.json({status:'success',data:data})
+            }
+        })
+    }catch(err){
+        res.json({status:'failed',message:'Internal server error'})
+    }
+}
+exports.deleteProfile=async (req,res)=>{
+   try{
+    const user = await User.findOne({_id:req.params.id});
+    await Todo.deleteMany({_id:{$in:user.todos}})
+
+    User.deleteOne({_id:req.params.id}, (err)=>{
+        if(err){
+            res.json({status: 'error', message: 'Delete user failed'})
+        }else{
+            fs.unlinkSync('public/upload/'+user.profileImage)
+            res.json({status: 'success', message: 'Delete user succeessfully'})
+        }
+    })
+    
+   }catch(err){
+    res.json({status: 'error', message: err.message})
+   }
 }

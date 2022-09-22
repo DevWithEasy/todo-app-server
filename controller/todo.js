@@ -58,8 +58,15 @@ exports.updateTodo = async (req,res)=>{
 }
 exports.deleteTodo =async (req,res)=>{
     try{
-        await Todo.deleteOne({_id:req.params.id});
+        const data = await Todo.findById({_id:req.params.id})
+        await User.updateOne({_id:data.user},{
+            $pull:{
+                todos: req.params.id
+            }
+        })
+        await Todo.deleteOne({_id:req.params.id})
         res.json({status:'Success',msg:'Todo delete successfully'});
+        
     }catch(err){
         res.json({status:'Failed',msg:'Internal Server Error'});
     }
