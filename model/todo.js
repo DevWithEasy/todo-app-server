@@ -11,7 +11,7 @@ const todoSchema = new mongoose.Schema({
     },
     status:{
         type: 'string',
-        enum: ['Running', 'Pending','Completed']
+        enum: ['Continue', 'Pending','Completed']
     },
     user:{
         type: mongoose.Types.ObjectId,

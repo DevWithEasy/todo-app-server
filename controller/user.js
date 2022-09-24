@@ -15,8 +15,13 @@ exports.registrationPost=async(req,res)=>{
             password: hasedPassword,
             profileImage: req.file.filename
         })
-        await newUser.save();
-        res.json({status:"success",msg:'registration succesfull'});
+        newUser.save((err, user) => {
+            if (err){
+                res.json({status:"failed",msg:'registration failed'});
+            }else{
+                res.json({status:"success",msg:'registration succesfull',user:user});
+            }
+        });
     }catch(err){
         res.json({status:"failed",msg:'Internal Server Error'});
     }
@@ -28,14 +33,14 @@ exports.logInPost =async (req, res) => {
         const user = await User.findOne({email:req.body.email})
         const match = await bcrypt.compare(req.body.password, user.password)
         if(match){
-            res.json({msg:'user found successfully',user:{
+            res.json({status:'success',msg:'user found successfully',user:{
                 id: user._id,
                 name: user.name,
                 email: user.email,
                 profileImage: user.profileImage
             }})
         }else{
-            res.json({failed:'user can not be found',message:'Please enter a valid email address and password'})
+            res.json({status:'failed',message:'Please enter a valid email address and password'})
         }
     }catch(err){
         res.json({error:'Internal Server Error'});
